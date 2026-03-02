@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>아이들 일정 관리 Pro</title>
+    <title>아이들 일정 통합 관리</title>
     <style>
-        :root { --ian-color: #e3f2fd; --loha-riha-color: #fce4ec; --event-color: #fff9c4; }
+        :root { --ian-color: #e3f2fd; --loha-riha-color: #fce4ec; --event-color: #fff9c4; --today-highlight: #ffeb3b; }
         body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f5; margin: 0; padding: 15px; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f5f5f5; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
@@ -14,27 +14,26 @@
         .login-btn { width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         
         h1 { text-align: center; color: #333; font-size: 1.3rem; margin-bottom: 5px; }
-        .current-info { text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9rem; }
+        .current-info { text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9rem; font-weight: bold; }
         
         .section { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+        .today-view { background-color: var(--today-highlight); border: 3px solid #fbc02d; }
         .ian-sec { border-top: 5px solid #2196F3; background-color: var(--ian-color); }
         .loha-sec { border-top: 5px solid #e91e63; background-color: var(--loha-riha-color); }
-        .event-sec { background-color: var(--event-color); border: 2px solid #fbc02d; }
 
-        /* 요일 체크박스 스타일 */
         .day-selector { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 5px; }
         .day-label { font-size: 0.8rem; display: flex; align-items: center; cursor: pointer; }
 
         .schedule-item { background: white; margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .pickup-badge { background: #333; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px; white-space: nowrap; }
+        .pickup-badge { background: #333; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px; }
         
         .input-group { margin-top: 10px; display: grid; gap: 8px; }
         input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.9rem; }
         button { cursor: pointer; background: #4caf50; color: white; border: none; font-weight: bold; }
-        button.delete-btn { background: #ff5252; padding: 5px 10px; font-size: 0.75rem; margin-left: 10px; }
+        button.delete-btn { background: #ff5252; padding: 5px 10px; font-size: 0.75rem; }
         
-        /* 날짜 뷰어 */
-        .date-viewer { margin-bottom: 15px; text-align: center; padding: 10px; background: #eee; border-radius: 10px; }
+        .date-picker-box { margin-bottom: 10px; text-align: center; }
+        .sub-title { display: block; margin-bottom: 8px; font-weight: bold; color: #555; border-bottom: 1px dashed #ccc; padding-bottom: 3px; }
     </style>
 </head>
 <body>
@@ -48,26 +47,30 @@
 </div>
 
 <div class="container" id="main-app">
-    <h1>📅 아이들 통합 일정 관리</h1>
-    <div class="current-info" id="current-time">로딩 중...</div>
+    <h1>📅 통합 일정 관리</h1>
+    <div class="current-info" id="current-time">시간 로딩 중...</div>
 
-    <div class="section event-sec">
-        <strong>📌 특정 날짜 이벤트 조회</strong>
-        <div class="date-viewer">
-            <input type="date" id="view-date" onchange="filterEvents()">
-            <div id="selected-date-events" style="margin-top:10px; min-height: 20px; font-size: 0.9rem; color: #d32f2f;"></div>
+    <div class="section today-view">
+        <div class="date-picker-box">
+            <span style="font-size: 0.9rem;">조회 날짜 선택:</span>
+            <input type="date" id="view-date" onchange="updateDailyView()">
         </div>
-        <hr>
+        <div id="daily-combined-list">
+            </div>
+    </div>
+
+    <div class="section" style="background: #eee;">
+        <span class="sub-title">📌 특정 날짜 이벤트 등록</span>
         <div class="input-group">
             <input type="date" id="event-date">
-            <input type="text" id="event-desc" placeholder="내용 (예: 현장학습)">
+            <input type="text" id="event-desc" placeholder="내용 (예: 영어유치원 하차)">
             <select id="event-target"><option value="모두">모두</option><option value="이안">이안</option><option value="로하,리하">로하,리하</option></select>
             <button id="add-event">이벤트 등록</button>
         </div>
     </div>
 
     <div class="section ian-sec">
-        <strong>💙 이안이 정기 일정</strong>
+        <span class="sub-title">💙 이안이 정기 일정 설정</span>
         <div id="ian-list"></div>
         <div class="input-group">
             <div class="day-selector" id="ian-days">
@@ -79,15 +82,15 @@
                 <label class="day-label"><input type="checkbox" value="토">토</label>
                 <label class="day-label"><input type="checkbox" value="일">일</label>
             </div>
-            <input type="text" id="ian-time" placeholder="시간 (예: 14:00)">
+            <input type="text" id="ian-time" placeholder="시간 (14:45)">
             <input type="text" id="ian-desc" placeholder="내용">
-            <select id="ian-pickup"><option value="">픽업없음</option><option>할머니</option><option>외할머니</option><option>엄마</option><option>아빠</option><option>관장</option><option>기타</option></select>
-            <button id="add-ian">요일별 일괄 추가</button>
+            <select id="ian-pickup"><option value="">픽업없음</option><option>할머니</option><option>외할머니</option><option>엄마</option><option>아빠</option><option>외할아버지</option><option>관장</option><option>기타</option></select>
+            <button id="add-ian">요일 일괄 추가</button>
         </div>
     </div>
 
     <div class="section loha-sec">
-        <strong>💖 로하, 리하 정기 일정</strong>
+        <span class="sub-title">💖 로하, 리하 정기 일정 설정</span>
         <div id="loha-list"></div>
         <div class="input-group">
             <div class="day-selector" id="loha-days">
@@ -102,7 +105,7 @@
             <input type="text" id="loha-time" placeholder="시간">
             <input type="text" id="loha-desc" placeholder="내용">
             <select id="loha-pickup"><option value="">픽업없음</option><option>할머니</option><option>엄마</option><option>아빠</option><option>기타</option></select>
-            <button id="add-loha">요일별 일괄 추가</button>
+            <button id="add-loha">요일 일괄 추가</button>
         </div>
     </div>
 </div>
@@ -123,87 +126,144 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 로그인
+    // 로그인 및 오늘 날짜 세팅
     document.getElementById('login-submit').onclick = () => {
         if(document.getElementById('pin').value === '0664') {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('view-date').value = today;
+            updateDailyView();
         } else { alert('비밀번호가 틀렸습니다.'); }
     };
 
-    // 현재 시간 표시
     setInterval(() => {
         const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' };
         document.getElementById('current-time').innerText = new Date().toLocaleString('ko-KR', options);
     }, 1000);
 
-    // 요일 다중 선택 데이터 수집 함수
-    function getSelectedDays(id) {
-        return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(cb => cb.value);
-    }
+    // 공통 저장 및 삭제 함수
+    async function save(col, data) { await addDoc(collection(db, col), data); }
+    window.del = async (col, id) => { if(confirm('삭제하시겠습니까?')) await deleteDoc(doc(db, col, id)); };
 
-    // 데이터 저장 (다중 요일 대응)
-    async function saveSchedule(type) {
-        const days = getSelectedDays(`${type}-days`);
+    // 정기 일정 추가
+    document.getElementById('add-ian').onclick = () => addMultiple('ian');
+    document.getElementById('add-loha').onclick = () => addMultiple('loha');
+    async function addMultiple(type) {
+        const days = Array.from(document.querySelectorAll(`#${type}-days input:checked`)).map(c => c.value);
         const time = document.getElementById(`${type}-time`).value;
         const desc = document.getElementById(`${type}-desc`).value;
         const pickup = document.getElementById(`${type}-pickup`).value;
-
-        if(days.length === 0 || !time || !desc) return alert("요일, 시간, 내용을 모두 확인해주세요!");
-
-        for (const day of days) {
-            await addDoc(collection(db, type), { day, time, desc, pickup, createdAt: Date.now() });
-        }
-        alert(`${days.join(',')} 일정 추가 완료!`);
-        // 체크박스 초기화
-        document.querySelectorAll(`#${type}-days input`).forEach(cb => cb.checked = false);
+        if(!days.length || !time || !desc) return alert("필수 항목 확인!");
+        for(const day of days) { await save(type, { day, time, desc, pickup }); }
+        alert('추가 완료!');
+        document.querySelectorAll(`#${type}-days input`).forEach(c => c.checked = false);
     }
 
-    document.getElementById('add-ian').onclick = () => saveSchedule('ian');
-    document.getElementById('add-loha').onclick = () => saveSchedule('loha');
+    // 특정 날짜 이벤트 추가
     document.getElementById('add-event').onclick = async () => {
         const date = document.getElementById('event-date').value;
         const desc = document.getElementById('event-desc').value;
         const target = document.getElementById('event-target').value;
-        if(!date || !desc) return alert("날짜와 내용을 입력하세요!");
-        await addDoc(collection(db, 'events'), { date, desc, target });
+        if(!date || !desc) return alert("날짜와 내용 입력!");
+        await save('events', { date, desc, target });
         alert('이벤트 등록 완료!');
     };
 
-    // 삭제 함수
-    window.del = async (col, id) => { if(confirm('삭제하시겠습니까?')) await deleteDoc(doc(db, col, id)); };
+    // ⭐ 핵심: 특정 날짜의 요일 일정 + 특정 이벤트를 합쳐서 보여주는 함수
+    let unsubscribeList = [];
+    window.updateDailyView = () => {
+        const selectedDate = document.getElementById('view-date').value;
+        if(!selectedDate) return;
 
-    // 실시간 리스너 (정기 일정)
-    function listen(col, listId) {
+        const dateObj = new Date(selectedDate);
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const selectedDay = days[dateObj.getDay()]; // 선택한 날짜의 요일
+
+        const display = document.getElementById('daily-combined-list');
+        display.innerHTML = `<div style="text-align:center; padding:10px;">데이터 불러오는 중...</div>`;
+
+        // 이전 리스너 해제 (중복 방지)
+        unsubscribeList.forEach(unsub => unsub());
+        unsubscribeList = [];
+
+        let combinedData = [];
+
+        // 1. 특정 날짜 이벤트 가져오기
+        const qEvents = query(collection(db, 'events'), where("date", "==", selectedDate));
+        const unsubEvents = onSnapshot(qEvents, (snap) => {
+            renderCombined();
+        });
+
+        // 2. 이안이 해당 요일 일정 가져오기
+        const qIan = query(collection(db, 'ian'), where("day", "==", selectedDay));
+        const unsubIan = onSnapshot(qIan, (snap) => {
+            renderCombined();
+        });
+
+        // 3. 로하리하 해당 요일 일정 가져오기
+        const qLoha = query(collection(db, 'loha'), where("day", "==", selectedDay));
+        const unsubLoha = onSnapshot(qLoha, (snap) => {
+            renderCombined();
+        });
+
+        unsubscribeList = [unsubEvents, unsubIan, unsubLoha];
+
+        async function renderCombined() {
+            display.innerHTML = `<strong>🗓️ ${selectedDate} (${selectedDay}요일) 전체 일정</strong>`;
+            
+            // 실시간 데이터 수집을 위한 간단한 로직 (비동기 처리)
+            // 사실 snapshot을 세 번 합치는 건 복잡하므로, 여기선 단순화하여 보여줍니다.
+        }
+    };
+
+    // 실시간 정기 일정 리스트 (하단 관리용)
+    function listenAll(col, listId) {
         const q = query(collection(db, col), orderBy("day"), orderBy("time", "asc"));
         onSnapshot(q, (snap) => {
             const list = document.getElementById(listId);
             list.innerHTML = '';
             snap.forEach(d => {
                 const item = d.data();
-                list.innerHTML += `<div class="schedule-item"><span><b>[${item.day}]</b> ${item.time} - ${item.desc} ${item.pickup ? `<span class="pickup-badge">${item.pickup}</span>` : ''}</span><button class="delete-btn" onclick="del('${col}', '${d.id}')">X</button></div>`;
+                list.innerHTML += `<div class="schedule-item"><span>[${item.day}] ${item.time} ${item.desc}</span><button class="delete-btn" onclick="del('${col}', '${d.id}')">X</button></div>`;
             });
         });
     }
+    listenAll('ian', 'ian-list');
+    listenAll('loha', 'loha-list');
 
-    // 특정 날짜 이벤트 필터링 (미리보기)
-    window.filterEvents = () => {
+    // --- 통합 조회 화면 업데이트 (심화 버전) ---
+    function syncDaily() {
         const selectedDate = document.getElementById('view-date').value;
-        const display = document.getElementById('selected-date-events');
-        const q = query(collection(db, 'events'), where("date", "==", selectedDate));
-        
-        onSnapshot(q, (snap) => {
-            if(snap.empty) { display.innerText = "선택한 날짜에 등록된 이벤트가 없습니다."; return; }
-            display.innerHTML = '<strong>검색 결과:</strong><br>';
-            snap.forEach(d => {
-                const item = d.data();
-                display.innerHTML += `<div>• [${item.target}] ${item.desc} <button class="delete-btn" onclick="del('events', '${d.id}')">X</button></div>`;
-            });
-        });
-    };
+        const selectedDay = ['일', '월', '화', '수', '목', '금', '토'][new Date(selectedDate).getDay()];
+        const display = document.getElementById('daily-combined-list');
 
-    listen('ian', 'ian-list');
-    listen('loha', 'loha-list');
+        // 모든 컬렉션을 한 번에 감시하여 합침
+        onSnapshot(collection(db, 'events'), (evSnap) => {
+        onSnapshot(collection(db, 'ian'), (ianSnap) => {
+        onSnapshot(collection(db, 'loha'), (lohaSnap) => {
+            display.innerHTML = `<strong>🗓️ ${selectedDate} (${selectedDay}요일) 일정</strong>`;
+            let items = [];
+            
+            // 이벤트 추가
+            evSnap.forEach(d => { if(d.data().date === selectedDate) items.push({...d.data(), id: d.id, col: 'events', tag: '📌'}); });
+            // 이안 요일 추가
+            ianSnap.forEach(d => { if(d.data().day === selectedDay) items.push({...d.data(), id: d.id, col: 'ian', tag: '💙'}); });
+            // 로하 요일 추가
+            lohaSnap.forEach(d => { if(d.data().day === selectedDay) items.push({...d.data(), id: d.id, col: 'loha', tag: '💖'}); });
+
+            items.sort((a,b) => a.time?.localeCompare(b.time));
+            
+            if(items.length === 0) display.innerHTML += `<div style="margin-top:10px; color:#999;">일정이 없습니다.</div>`;
+            items.forEach(it => {
+                display.innerHTML += `<div class="schedule-item" style="border-left: 5px solid ${it.col === 'ian' ? '#2196F3' : (it.col === 'events' ? '#fbc02d' : '#e91e63')}">
+                    <span>${it.tag} ${it.time || ''} <b>${it.desc}</b> ${it.pickup ? `<span class="pickup-badge">${it.pickup}</span>` : ''}</span>
+                    <button class="delete-btn" onclick="del('${it.col}', '${it.id}')">X</button>
+                </div>`;
+            });
+        }); }); });
+    }
+    window.updateDailyView = syncDaily;
 </script>
 </body>
 </html>
