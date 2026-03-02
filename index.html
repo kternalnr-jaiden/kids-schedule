@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이들 일정 관리</title>
+    <style>
+        :root { --ian-color: #e3f2fd; --loha-riha-color: #fce4ec; --event-color: #fff9c4; }
+        body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f5f5f5; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        .login-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        .pin-input { width: 150px; height: 50px; font-size: 2rem; text-align: center; letter-spacing: 10px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 15px; -webkit-text-security: disc; }
+        .login-btn { width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        h1 { text-align: center; color: #333; font-size: 1.5rem; }
+        .current-info { text-align: center; margin-bottom: 20px; color: #666; font-weight: bold; }
+        .section { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+        .ian-sec { background-color: var(--ian-color); }
+        .loha-sec { background-color: var(--loha-riha-color); }
+        .event-sec { background-color: var(--event-color); border: 2px solid #fbc02d; }
+        .schedule-item { background: white; margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; border-bottom: 1px solid #eee; }
+        .pickup-badge { background: #333; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-left: 5px; }
+        .input-group { margin-top: 10px; display: grid; gap: 5px; }
+        input, select, button { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+        button { cursor: pointer; background: #4caf50; color: white; border: none; font-weight: bold; }
+        button.delete-btn { background: #ff5252; padding: 2px 8px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h3>비밀번호 입력</h3>
+        <input type="password" id="pin" class="pin-input" inputmode="numeric" maxlength="4" placeholder="****">
+        <button class="login-btn" id="login-submit">확인</button>
+    </div>
+</div>
+
+<div class="container" id="main-app">
+    <h1>👦👧 우리 아이 일정표</h1>
+    <div class="current-info" id="current-time">날짜 로딩 중...</div>
+
+    <div class="section event-sec">
+        <strong>📌 오늘/특정일 이벤트 (최상단)</strong>
+        <div id="events-list"></div>
+        <div class="input-group">
+            <input type="date" id="event-date">
+            <input type="text" id="event-desc" placeholder="이벤트 내용">
+            <select id="event-target"><option value="모두">모두</option><option value="이안">이안</option><option value="로하,리하">로하,리하</option></select>
+            <button id="add-event">등록</button>
+        </div>
+    </div>
+
+    <div class="section ian-sec">
+        <strong>💙 이안이 일정</strong>
+        <div id="ian-list"></div>
+        <div class="input-group">
+            <select id="ian-day"><option>월</option><option>화</option><option>수</option><option>목</option><option>금</option><option>토</option><option>일</option></select>
+            <input type="text" id="ian-time" placeholder="시간 (예: 13:00~14:40)">
+            <input type="text" id="ian-desc" placeholder="내용">
+            <select id="ian-pickup"><option value="">픽업없음</option><option>할머니</option><option>외할머니</option><option>엄마</option><option>아빠</option><option>외할아버지</option><option>관장</option><option>기타</option></select>
+            <button id="add-ian">추가</button>
+        </div>
+    </div>
+
+    <div class="section loha-sec">
+        <strong>💖 로하, 리하 일정</strong>
+        <div id="loha-list"></div>
+        <div class="input-group">
+            <select id="loha-day"><option>월</option><option>화</option><option>수</option><option>목</option><option>금</option><option>토</option><option>일</option></select>
+            <input type="text" id="loha-time" placeholder="시간">
+            <input type="text" id="loha-desc" placeholder="내용">
+            <select id="loha-pickup"><option value="">픽업없음</option><option>할머니</option><option>엄마</option><option>아빠</option><option>기타</option></select>
+            <button id="add-loha">추가</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAlDXH9Goh6hX1IYP4van8KLhNDQZhHXmc",
+        authDomain: "kids-schedule-686ad.firebaseapp.com",
+        projectId: "kids-schedule-686ad",
+        storageBucket: "kids-schedule-686ad.firebasestorage.app",
+        messagingSenderId: "566006284891",
+        appId: "1:566006284891:web:69b51302d26caafa2c757e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById('login-submit').onclick = () => {
+        if(document.getElementById('pin').value === '0664') {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+        } else { alert('비밀번호가 틀렸습니다.'); }
+    };
+
+    setInterval(() => {
+        const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' };
+        document.getElementById('current-time').innerText = new Date().toLocaleString('ko-KR', options);
+    }, 1000);
+
+    async function saveData(col, data) { await addDoc(collection(db, col), data); }
+
+    document.getElementById('add-event').onclick = () => saveData('events', { date: document.getElementById('event-date').value, desc: document.getElementById('event-desc').value, target: document.getElementById('event-target').value });
+    document.getElementById('add-ian').onclick = () => saveData('ian', { day: document.getElementById('ian-day').value, time: document.getElementById('ian-time').value, desc: document.getElementById('ian-desc').value, pickup: document.getElementById('ian-pickup').value });
+    document.getElementById('add-loha').onclick = () => saveData('loha', { day: document.getElementById('loha-day').value, time: document.getElementById('loha-time').value, desc: document.getElementById('loha-desc').value, pickup: document.getElementById('loha-pickup').value });
+
+    window.del = async (col, id) => { if(confirm('삭제하시겠습니까?')) await deleteDoc(doc(db, col, id)); };
+
+    function listen(col, listId) {
+        const q = query(collection(db, col), orderBy(col === 'events' ? "date" : "time", "asc"));
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById(listId);
+            list.innerHTML = '';
+            snap.forEach(d => {
+                const item = d.data();
+                list.innerHTML += `<div class="schedule-item"><span>${col === 'events' ? `[${item.date}]` : `(${item.day}) ${item.time}`} <b>${item.desc}</b> ${item.pickup ? `<span class="pickup-badge">${item.pickup}</span>` : ''}</span><button class="delete-btn" onclick="del('${col}', '${d.id}')">X</button></div>`;
+            });
+        });
+    }
+
+    listen('events', 'events-list');
+    listen('ian', 'ian-list');
+    listen('loha', 'loha-list');
+</script>
+</body>
+</html>
