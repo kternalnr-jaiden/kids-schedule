@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>아이들 일정 통합 관리 (KPI 추가)</title>
+    <title>아이들 일정 통합 관리</title>
     <style>
         :root { --ian-color: #e3f2fd; --loha-riha-color: #fce4ec; --event-color: #fff9c4; --today-highlight: #ffeb3b; }
         body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f5; margin: 0; padding: 15px; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+        
+        /* 암호 화면 */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f5f5f5; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
         .login-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
         .pin-input { width: 150px; height: 50px; font-size: 2rem; text-align: center; letter-spacing: 10px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 15px; -webkit-text-security: disc; }
@@ -15,27 +17,37 @@
         
         /* 팝업 스타일 */
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto; }
-        .popup { background: white; width: 90%; max-width: 500px; margin: 50px auto; padding: 20px; border-radius: 15px; position: relative; }
+        .popup { background: white; width: 90%; max-width: 500px; margin: 30px auto; padding: 20px; border-radius: 15px; position: relative; }
         .close-popup { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; font-weight: bold; }
         .popup-content { font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; }
-        .popup-img { width: 100%; border-radius: 5px; margin-top: 10px; }
+        .popup-img { width: 100%; border-radius: 5px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         
-        .kpi-btns { display: flex; gap: 10px; margin-bottom: 20px; }
-        .kpi-btns button { flex: 1; padding: 12px; font-size: 0.85rem; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+        /* KPI 버튼 */
+        .kpi-btns { display: flex; gap: 8px; margin-bottom: 15px; }
+        .kpi-btns button { flex: 1; padding: 10px; font-size: 0.8rem; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
         .btn-blue { background: #007bff; }
         .btn-orange { background: #fd7e14; }
 
-        /* 기존 스타일 유지 */
-        h1 { text-align: center; color: #333; font-size: 1.3rem; margin-bottom: 5px; }
-        .current-info { text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9rem; font-weight: bold; }
-        .section { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
-        .today-view { background-color: var(--today-highlight); border: 3px solid #fbc02d; }
-        .ian-sec { border-top: 5px solid #2196F3; background-color: var(--ian-color); }
-        .loha-sec { border-top: 5px solid #e91e63; background-color: var(--loha-riha-color); }
-        .schedule-item { background: white; margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .input-group { margin-top: 10px; display: grid; gap: 8px; }
-        input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-        button.delete-btn { background: #ff5252; padding: 5px 10px; font-size: 0.75rem; border: none; color: white; border-radius: 5px; }
+        h1 { text-align: center; color: #333; font-size: 1.2rem; margin-bottom: 5px; }
+        .current-info { text-align: center; margin-bottom: 15px; color: #666; font-size: 0.85rem; font-weight: bold; }
+        
+        .section { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+        .today-view { background-color: var(--today-highlight); border: 2px solid #fbc02d; }
+        .ian-sec { border-top: 4px solid #2196F3; background-color: var(--ian-color); }
+        .loha-sec { border-top: 4px solid #e91e63; background-color: var(--loha-riha-color); }
+
+        .day-selector { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; background: rgba(255,255,255,0.6); padding: 5px; border-radius: 5px; }
+        .day-label { font-size: 0.75rem; display: flex; align-items: center; cursor: pointer; }
+
+        .schedule-item { background: white; margin: 4px 0; padding: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .pickup-badge { background: #333; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.7rem; margin-left: 4px; }
+        
+        .input-group { margin-top: 8px; display: grid; gap: 6px; }
+        input, select, button { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.85rem; }
+        button.main-add-btn { cursor: pointer; background: #4caf50; color: white; border: none; font-weight: bold; }
+        button.delete-btn { background: #ff5252; color: white; border: none; padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; }
+        
+        .sub-title { display: block; margin-bottom: 8px; font-weight: bold; color: #444; border-bottom: 1px dashed #bbb; padding-bottom: 2px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -49,7 +61,7 @@
 </div>
 
 <div class="container" id="main-app">
-    <h1>📅 통합 일정 관리</h1>
+    <h1>👦👧 우리 아이 통합 일정표</h1>
     <div class="current-info" id="current-time">시간 로딩 중...</div>
 
     <div class="kpi-btns">
@@ -58,33 +70,71 @@
     </div>
 
     <div class="section today-view">
-        <div style="text-align: center; margin-bottom: 10px;">
-            <span style="font-size: 0.9rem;">조회 날짜:</span>
+        <div style="text-align: center; margin-bottom: 8px;">
+            <span style="font-size: 0.85rem; font-weight: bold;">조회:</span>
             <input type="date" id="view-date" onchange="updateDailyView()">
         </div>
         <div id="daily-combined-list"></div>
     </div>
 
-    <div class="section" style="background: #eee;">
-        <span style="font-weight:bold;">📌 특정 날짜 이벤트 등록</span>
+    <div class="section" style="background: #f0f0f0;">
+        <span class="sub-title">📌 일회성 이벤트 등록</span>
         <div class="input-group">
             <input type="date" id="event-date">
-            <input type="text" id="event-desc" placeholder="내용">
+            <input type="text" id="event-desc" placeholder="내용 (예: 현장체험학습)">
             <select id="event-target"><option value="모두">모두</option><option value="이안">이안</option><option value="로하,리하">로하,리하</option></select>
-            <button id="add-event">등록</button>
+            <button class="main-add-btn" id="add-event">이벤트 등록</button>
         </div>
     </div>
-    
-    <div id="ian-section-placeholder"></div>
+
+    <div class="section ian-sec">
+        <span class="sub-title">💙 이안이 정기 일정 (요일별)</span>
+        <div id="ian-list"></div>
+        <div class="input-group">
+            <div class="day-selector" id="ian-days">
+                <label class="day-label"><input type="checkbox" value="월">월</label>
+                <label class="day-label"><input type="checkbox" value="화">화</label>
+                <label class="day-label"><input type="checkbox" value="수">수</label>
+                <label class="day-label"><input type="checkbox" value="목">목</label>
+                <label class="day-label"><input type="checkbox" value="금">금</label>
+                <label class="day-label"><input type="checkbox" value="토">토</label>
+                <label class="day-label"><input type="checkbox" value="일">일</label>
+            </div>
+            <input type="text" id="ian-time" placeholder="시간 (예: 14:45)">
+            <input type="text" id="ian-desc" placeholder="내용">
+            <select id="ian-pickup"><option value="">픽업없음</option><option>할머니</option><option>외할머니</option><option>엄마</option><option>아빠</option><option>외할아버지</option><option>관장</option><option>기타</option></select>
+            <button class="main-add-btn" id="add-ian">요일 일괄 추가</button>
+        </div>
+    </div>
+
+    <div class="section loha-sec">
+        <span class="sub-title">💖 로하, 리하 정기 일정 (요일별)</span>
+        <div id="loha-list"></div>
+        <div class="input-group">
+            <div class="day-selector" id="loha-days">
+                <label class="day-label"><input type="checkbox" value="월">월</label>
+                <label class="day-label"><input type="checkbox" value="화">화</label>
+                <label class="day-label"><input type="checkbox" value="수">수</label>
+                <label class="day-label"><input type="checkbox" value="목">목</label>
+                <label class="day-label"><input type="checkbox" value="금">금</label>
+                <label class="day-label"><input type="checkbox" value="토">토</label>
+                <label class="day-label"><input type="checkbox" value="일">일</label>
+            </div>
+            <input type="text" id="loha-time" placeholder="시간">
+            <input type="text" id="loha-desc" placeholder="내용">
+            <select id="loha-pickup"><option value="">픽업없음</option><option>할머니</option><option>엄마</option><option>아빠</option><option>기타</option></select>
+            <button class="main-add-btn" id="add-loha">요일 일괄 추가</button>
+        </div>
+    </div>
 </div>
 
 <div id="popup-kpi-book" class="overlay" onclick="closePopup('popup-kpi-book')">
     <div class="popup" onclick="event.stopPropagation()">
         <span class="close-popup" onclick="closePopup('popup-kpi-book')">&times;</span>
-        <h3>📖 KPI 교재 및 시간표(C1)</h3>
+        <h3>📖 KPI 교재 및 시간표</h3>
         <div class="popup-content">
-            <img src="1000025721.png" alt="KPI 교재 리스트" class="popup-img">
-            <p style="font-size: 0.8rem; color: #666; text-align: center;">(이미지 파일이 GitHub 저장소에 있어야 보입니다)</p>
+            <img src="1000025721.png" alt="KPI 교재" class="popup-img">
+            <p style="text-align:center; font-size:0.7rem; color:#888; margin-top:5px;">(파일: 1000025721.png)</p>
         </div>
     </div>
 </div>
@@ -94,27 +144,25 @@
         <span class="close-popup" onclick="closePopup('popup-kpi-notice')">&times;</span>
         <h3>📢 KPI 이용 안내</h3>
         <div class="popup-content">
-KPI에서는 학생들의 영어 실력 향상을 위해 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램을 운영합니다.
+KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램을 운영합니다.
 
-**📌 KPI Study & AR/SR 로그인 정보**
+**📌 계정 정보**
 - KPI Study: <a href="http://www.kpistudy.com" target="_blank">www.kpistudy.com</a>
   ID: **63090664** / PW: **kpi63090664**
-
-- AR/SR: <a href="https://global-zone60.renaissance-go.com/welcomeportal/rpna73ul" target="_blank">르네상스 접속 링크</a>
+- AR/SR: <a href="https://global-zone60.renaissance-go.com/welcomeportal/rpna73ul" target="_blank">르네상스 링크</a>
 
 **1. KPI Study (온라인 숙제)**
-- 매주 수업 후 'My Course'에서 숙제 완료 (Due Date 확인)
+- 수업 후 'My Course'에서 마감일까지 완료.
 
-**2. AR/SR 프로그램**
-- AR: 독서 후 퀴즈 풀기
+**2. AR/SR 독서 프로그램**
+- AR: 퀴즈 풀기
 - SR: 리딩 레벨 테스트 (3개월 권장)
-- Monitor Password: **admin**
+- Monitor PW: **admin**
         </div>
     </div>
 </div>
 
 <script type="module">
-    // Firebase 및 기본 로직 (기존과 동일하게 유지)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -126,45 +174,101 @@ KPI에서는 학생들의 영어 실력 향상을 위해 온라인 복습 프로
         messagingSenderId: "566006284891",
         appId: "1:566006284891:web:69b51302d26caafa2c757e"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 팝업 열기/닫기 함수
+    // 팝업 기능
     window.openPopup = (id) => { document.getElementById(id).style.display = 'block'; };
     window.closePopup = (id) => { document.getElementById(id).style.display = 'none'; };
 
-    // 로그인 로직
+    // 로그인
     document.getElementById('login-submit').onclick = () => {
         if(document.getElementById('pin').value === '0664') {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             document.getElementById('view-date').value = new Date().toISOString().split('T')[0];
             updateDailyView();
-        } else { alert('비밀번호 틀림'); }
+        } else { alert('비밀번호가 틀렸습니다.'); }
     };
 
-    // 시간 및 통합 조회 로직 (기존 함수들 그대로 복사해서 사용하시면 됩니다)
+    // 시간 표시
+    setInterval(() => {
+        const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' };
+        document.getElementById('current-time').innerText = new Date().toLocaleString('ko-KR', options);
+    }, 1000);
+
+    // 공통 저장 및 삭제
+    async function save(col, data) { await addDoc(collection(db, col), data); }
+    window.del = async (col, id) => { if(confirm('삭제하시겠습니까?')) await deleteDoc(doc(db, col, id)); };
+
+    // 정기 일정 추가 (다중 요일)
+    async function addMultiple(type) {
+        const days = Array.from(document.querySelectorAll(`#${type}-days input:checked`)).map(c => c.value);
+        const time = document.getElementById(`${type}-time`).value;
+        const desc = document.getElementById(`${type}-desc`).value;
+        const pickup = document.getElementById(`${type}-pickup`).value;
+        if(!days.length || !time || !desc) return alert("요일, 시간, 내용을 입력해주세요.");
+        for(const day of days) { await save(type, { day, time, desc, pickup }); }
+        alert(`${days.join(',')} 일정 추가 완료!`);
+        document.querySelectorAll(`#${type}-days input`).forEach(c => c.checked = false);
+    }
+    document.getElementById('add-ian').onclick = () => addMultiple('ian');
+    document.getElementById('add-loha').onclick = () => addMultiple('loha');
+
+    // 이벤트 등록
+    document.getElementById('add-event').onclick = async () => {
+        const date = document.getElementById('event-date').value;
+        const desc = document.getElementById('event-desc').value;
+        const target = document.getElementById('event-target').value;
+        if(!date || !desc) return alert("날짜와 내용을 입력하세요.");
+        await save('events', { date, desc, target });
+        alert('이벤트 등록 완료!');
+    };
+
+    // ⭐ 실시간 통합 조회 로직
     function syncDaily() {
         const selectedDate = document.getElementById('view-date').value;
+        if(!selectedDate) return;
         const selectedDay = ['일', '월', '화', '수', '목', '금', '토'][new Date(selectedDate).getDay()];
         const display = document.getElementById('daily-combined-list');
 
         onSnapshot(collection(db, 'events'), (evSnap) => {
         onSnapshot(collection(db, 'ian'), (ianSnap) => {
         onSnapshot(collection(db, 'loha'), (lohaSnap) => {
-            display.innerHTML = `<strong>🗓️ ${selectedDate} (${selectedDay}) 일정</strong>`;
+            display.innerHTML = `<div style="margin-bottom:8px; font-weight:bold; color:#d32f2f;">🗓️ ${selectedDate} (${selectedDay}요일)</div>`;
             let items = [];
             evSnap.forEach(d => { if(d.data().date === selectedDate) items.push({...d.data(), id: d.id, col: 'events', tag: '📌'}); });
             ianSnap.forEach(d => { if(d.data().day === selectedDay) items.push({...d.data(), id: d.id, col: 'ian', tag: '💙'}); });
             lohaSnap.forEach(d => { if(d.data().day === selectedDay) items.push({...d.data(), id: d.id, col: 'loha', tag: '💖'}); });
+
             items.sort((a,b) => (a.time || '').localeCompare(b.time || ''));
+            
+            if(items.length === 0) display.innerHTML += `<div style="color:#999; font-size:0.8rem;">일정이 없습니다.</div>`;
             items.forEach(it => {
-                display.innerHTML += `<div class="schedule-item"><span>${it.tag} ${it.time || ''} <b>${it.desc}</b></span><button class="delete-btn" onclick="del('${it.col}', '${it.id}')">X</button></div>`;
+                display.innerHTML += `<div class="schedule-item" style="border-left: 5px solid ${it.col === 'ian' ? '#2196F3' : (it.col === 'events' ? '#fbc02d' : '#e91e63')}">
+                    <span>${it.tag} ${it.time || ''} <b>${it.desc}</b> ${it.pickup ? `<span class="pickup-badge">${it.pickup}</span>` : ''}</span>
+                    <button class="delete-btn" onclick="del('${it.col}', '${it.id}')">X</button>
+                </div>`;
             });
         }); }); });
     }
     window.updateDailyView = syncDaily;
-    window.del = async (col, id) => { if(confirm('삭제?')) await deleteDoc(doc(db, col, id)); };
+
+    // 하단 목록 관리용 리스너
+    function listenAll(col, listId) {
+        const q = query(collection(db, col), orderBy("day"), orderBy("time", "asc"));
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById(listId);
+            list.innerHTML = '';
+            snap.forEach(d => {
+                const item = d.data();
+                list.innerHTML += `<div class="schedule-item"><span>[${item.day}] ${item.time} ${item.desc}</span><button class="delete-btn" onclick="del('${col}', '${d.id}')">X</button></div>`;
+            });
+        });
+    }
+    listenAll('ian', 'ian-list');
+    listenAll('loha', 'loha-list');
 </script>
 </body>
 </html>
