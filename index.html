@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>아이들 일정 통합 관리</title>
+    <title>아이들 일정 통합 관리 (KST 수정판)</title>
     <style>
         :root { --ian-color: #e3f2fd; --loha-riha-color: #fce4ec; --event-color: #fff9c4; --today-highlight: #ffeb3b; }
         body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f5; margin: 0; padding: 15px; }
@@ -134,7 +134,6 @@
         <h3>📖 KPI 교재 및 시간표</h3>
         <div class="popup-content">
             <img src="1000025721.png" alt="KPI 교재" class="popup-img">
-            <p style="text-align:center; font-size:0.7rem; color:#888; margin-top:5px;">(파일: 1000025721.png)</p>
         </div>
     </div>
 </div>
@@ -178,59 +177,66 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 팝업 기능
     window.openPopup = (id) => { document.getElementById(id).style.display = 'block'; };
     window.closePopup = (id) => { document.getElementById(id).style.display = 'none'; };
 
-    // 로그인
+    // ⭐ 한국 시간(KST) 구하기 함수
+    function getKSTDateString() {
+        const now = new Date();
+        const kstOffset = 9 * 60 * 60 * 1000;
+        const kstDate = new Date(now.getTime() + kstOffset);
+        return kstDate.toISOString().split('T')[0];
+    }
+
     document.getElementById('login-submit').onclick = () => {
         if(document.getElementById('pin').value === '0664') {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            document.getElementById('view-date').value = new Date().toISOString().split('T')[0];
+            
+            // ⭐ 로그인 시 한국 시간 기준으로 오늘 날짜 세팅
+            document.getElementById('view-date').value = getKSTDateString();
             updateDailyView();
         } else { alert('비밀번호가 틀렸습니다.'); }
     };
 
-    // 시간 표시
     setInterval(() => {
         const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' };
         document.getElementById('current-time').innerText = new Date().toLocaleString('ko-KR', options);
     }, 1000);
 
-    // 공통 저장 및 삭제
     async function save(col, data) { await addDoc(collection(db, col), data); }
     window.del = async (col, id) => { if(confirm('삭제하시겠습니까?')) await deleteDoc(doc(db, col, id)); };
 
-    // 정기 일정 추가 (다중 요일)
     async function addMultiple(type) {
         const days = Array.from(document.querySelectorAll(`#${type}-days input:checked`)).map(c => c.value);
         const time = document.getElementById(`${type}-time`).value;
         const desc = document.getElementById(`${type}-desc`).value;
         const pickup = document.getElementById(`${type}-pickup`).value;
-        if(!days.length || !time || !desc) return alert("요일, 시간, 내용을 입력해주세요.");
+        if(!days.length || !time || !desc) return alert("항목 확인!");
         for(const day of days) { await save(type, { day, time, desc, pickup }); }
-        alert(`${days.join(',')} 일정 추가 완료!`);
+        alert('추가 완료!');
         document.querySelectorAll(`#${type}-days input`).forEach(c => c.checked = false);
     }
     document.getElementById('add-ian').onclick = () => addMultiple('ian');
     document.getElementById('add-loha').onclick = () => addMultiple('loha');
 
-    // 이벤트 등록
     document.getElementById('add-event').onclick = async () => {
         const date = document.getElementById('event-date').value;
         const desc = document.getElementById('event-desc').value;
         const target = document.getElementById('event-target').value;
-        if(!date || !desc) return alert("날짜와 내용을 입력하세요.");
+        if(!date || !desc) return alert("날짜/내용 입력!");
         await save('events', { date, desc, target });
         alert('이벤트 등록 완료!');
     };
 
-    // ⭐ 실시간 통합 조회 로직
     function syncDaily() {
         const selectedDate = document.getElementById('view-date').value;
         if(!selectedDate) return;
-        const selectedDay = ['일', '월', '화', '수', '목', '금', '토'][new Date(selectedDate).getDay()];
+
+        // ⭐ 요일 계산 시 브라우저 오차 방지 (시간 강제 지정)
+        const dateObj = new Date(selectedDate + "T00:00:00");
+        const selectedDay = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
+        
         const display = document.getElementById('daily-combined-list');
 
         onSnapshot(collection(db, 'events'), (evSnap) => {
@@ -241,7 +247,6 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
             evSnap.forEach(d => { if(d.data().date === selectedDate) items.push({...d.data(), id: d.id, col: 'events', tag: '📌'}); });
             ianSnap.forEach(d => { if(d.data().day === selectedDay) items.push({...d.data(), id: d.id, col: 'ian', tag: '💙'}); });
             lohaSnap.forEach(d => { if(d.data().day === selectedDay) items.push({...d.data(), id: d.id, col: 'loha', tag: '💖'}); });
-
             items.sort((a,b) => (a.time || '').localeCompare(b.time || ''));
             
             if(items.length === 0) display.innerHTML += `<div style="color:#999; font-size:0.8rem;">일정이 없습니다.</div>`;
@@ -255,7 +260,6 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
     }
     window.updateDailyView = syncDaily;
 
-    // 하단 목록 관리용 리스너
     function listenAll(col, listId) {
         const q = query(collection(db, col), orderBy("day"), orderBy("time", "asc"));
         onSnapshot(q, (snap) => {
@@ -272,3 +276,4 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
 </script>
 </body>
 </html>
+I
