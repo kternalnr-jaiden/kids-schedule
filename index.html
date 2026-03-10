@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>아이들 일정 통합 관리 (KST 수정판)</title>
+    <title>아이들 일정 통합 관리</title>
     <style>
         :root { --ian-color: #e3f2fd; --loha-riha-color: #fce4ec; --event-color: #fff9c4; --today-highlight: #ffeb3b; }
         body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f5; margin: 0; padding: 15px; }
@@ -149,6 +149,7 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
 - KPI Study: <a href="http://www.kpistudy.com" target="_blank">www.kpistudy.com</a>
   ID: **63090664** / PW: **kpi63090664**
 - AR/SR: <a href="https://global-zone60.renaissance-go.com/welcomeportal/rpna73ul" target="_blank">르네상스 링크</a>
+- 자료폴더: <a href="https://drive.google.com/drive/folders/1JU-JGpCHJJUvJrODNspQYMh63CYxJo5h" target="_blank">Google Drive 이동</a>
 
 **1. KPI Study (온라인 숙제)**
 - 수업 후 'My Course'에서 마감일까지 완료.
@@ -180,7 +181,6 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
     window.openPopup = (id) => { document.getElementById(id).style.display = 'block'; };
     window.closePopup = (id) => { document.getElementById(id).style.display = 'none'; };
 
-    // ⭐ 한국 시간(KST) 구하기 함수
     function getKSTDateString() {
         const now = new Date();
         const kstOffset = 9 * 60 * 60 * 1000;
@@ -192,8 +192,6 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
         if(document.getElementById('pin').value === '0664') {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            
-            // ⭐ 로그인 시 한국 시간 기준으로 오늘 날짜 세팅
             document.getElementById('view-date').value = getKSTDateString();
             updateDailyView();
         } else { alert('비밀번호가 틀렸습니다.'); }
@@ -233,7 +231,6 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
         const selectedDate = document.getElementById('view-date').value;
         if(!selectedDate) return;
 
-        // ⭐ 요일 계산 시 브라우저 오차 방지 (시간 강제 지정)
         const dateObj = new Date(selectedDate + "T00:00:00");
         const selectedDay = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
         
@@ -276,4 +273,3 @@ KPI에서는 온라인 복습 프로그램(KPI Study)과 AR 독서 프로그램�
 </script>
 </body>
 </html>
-I
